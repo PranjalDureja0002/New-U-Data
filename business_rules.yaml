@@ -1,0 +1,221 @@
+# Business rules for NL2SQL
+# Defines metrics, filters, and domain-specific logic
+
+metrics:
+  total_spend:
+    name: "Total Spend"
+    formula: "SUM(ROUND(AMOUNT / EXCH_RATE, 2))"
+    description: "Total procurement spend in EUR (converted via EXCH_RATE)"
+    column: AMOUNT
+    aggregation: SUM
+    currency: EUR
+    usage: "Default spend metric. Always convert to EUR using ROUND(AMOUNT / EXCH_RATE, 2)."
+  ytd_spend:
+    name: "Year-to-Date Spend"
+    formula: "SUM(ROUND(AMOUNT / EXCH_RATE, 2))"
+    description: "Year-to-date spend from Jan 1 of current year"
+    column: AMOUNT
+    aggregation: SUM
+    filter: "EXTRACT(YEAR FROM INVOICE_DATE) = EXTRACT(YEAR FROM SYSDATE)"
+    usage: "When user asks for YTD or year-to-date spend"
+  spend_count:
+    name: "Transaction Count"
+    formula: "COUNT(*)"
+    description: "Number of transactions/invoices"
+    aggregation: COUNT
+    usage: "When user asks for number of transactions or purchases"
+  avg_transaction:
+    name: "Average Transaction"
+    formula: "ROUND(AVG(AMOUNT / EXCH_RATE), 2)"
+    description: "Average transaction amount in EUR"
+    column: AMOUNT
+    aggregation: AVG
+    usage: "When user asks for average spend per transaction"
+  unique_suppliers:
+    name: "Unique Suppliers"
+    formula: "COUNT(DISTINCT SUPPLIER_NO)"
+    description: "Count of distinct suppliers"
+    column: SUPPLIER_NO
+    aggregation: COUNT_DISTINCT
+    usage: "When user asks for number of suppliers or supplier count"
+  unique_plants:
+    name: "Unique Plants"
+    formula: "COUNT(DISTINCT PLANT_NO)"
+    description: "Count of distinct plants"
+    column: PLANT_NO
+    aggregation: COUNT_DISTINCT
+    usage: "When user asks for number of plants or facility count"
+  unique_invoices:
+    name: "Unique Invoices"
+    formula: "COUNT(DISTINCT INVOICE_NO)"
+    description: "Count of distinct invoices"
+    column: INVOICE_NO
+    aggregation: COUNT_DISTINCT
+    usage: "When user asks for number of invoices"
+  spend_per_supplier:
+    name: "Spend per Supplier"
+    formula: "SUM(ROUND(AMOUNT / EXCH_RATE, 2)) / NULLIF(COUNT(DISTINCT SUPPLIER_NO), 0)"
+    description: "Average spend per supplier in EUR"
+    usage: "When user asks for average spend per supplier"
+  spend_per_plant:
+    name: "Spend per Plant"
+    formula: "SUM(ROUND(AMOUNT / EXCH_RATE, 2)) / NULLIF(COUNT(DISTINCT PLANT_NO), 0)"
+    description: "Average spend per plant in EUR"
+    usage: "When user asks for average spend per plant/facility"
+  max_spend:
+    name: "Maximum Spend"
+    formula: "MAX(ROUND(AMOUNT / EXCH_RATE, 2))"
+    description: "Highest single transaction amount in EUR"
+    column: AMOUNT
+    aggregation: MAX
+    usage: "When user asks for largest or highest spend transaction"
+  min_spend:
+    name: "Minimum Spend"
+    formula: "MIN(ROUND(AMOUNT / EXCH_RATE, 2))"
+    description: "Lowest single transaction amount in EUR"
+    column: AMOUNT
+    aggregation: MIN
+    usage: "When user asks for smallest or lowest spend transaction"
+
+# Time filter definitions
+time_filters:
+  current_year:
+    name: "Current Calendar Year"
+    filter: "EXTRACT(YEAR FROM INVOICE_DATE) = EXTRACT(YEAR FROM SYSDATE)"
+    description: "Filter for current calendar year (Jan-Dec)"
+    triggers:
+      - "this year"
+      - "current year"
+  previous_year:
+    name: "Previous Calendar Year"
+    filter: "EXTRACT(YEAR FROM INVOICE_DATE) = EXTRACT(YEAR FROM SYSDATE) - 1"
+    description: "Filter for previous calendar year"
+    triggers:
+      - "last year"
+      - "previous year"
+      - "prior year"
+  year_specific:
+    name: "Specific Year"
+    filter_template: "EXTRACT(YEAR FROM INVOICE_DATE) = {year}"
+    description: "Filter for a specific calendar year (Jan 1 - Dec 31)"
+    triggers:
+      - "in {year}"
+      - "for {year}"
+      - "year {year}"
+  year_range:
+    name: "Year Range"
+    filter_template: "EXTRACT(YEAR FROM INVOICE_DATE) BETWEEN {start_year} AND {end_year}"
+    description: "Filter for range of calendar years"
+    triggers:
+      - "from {start} to {end}"
+      - "between {start} and {end}"
+  current_fiscal_year:
+    name: "Current Fiscal Year"
+    description: "Motherson fiscal year: April 1 to March 31. Use ONLY when user says 'fiscal year' or 'FY'."
+    note: "Pipeline computes concrete dates automatically"
+    triggers:
+      - "current fiscal year"
+      - "this fiscal year"
+      - "FY"
+      - "FY25"
+  ytd:
+    name: "Year to Date"
+    filter: "INVOICE_DATE >= TRUNC(SYSDATE, 'YEAR')"
+    description: "From start of current calendar year to today"
+    triggers:
+      - "ytd"
+      - "year to date"
+      - "year-to-date"
+  last_n_months:
+    name: "Last N Months"
+    filter_template: "INVOICE_DATE >= ADD_MONTHS(SYSDATE, -{months})"
+    description: "Last N months of data"
+    triggers:
+      - "last {n} months"
+      - "past {n} months"
+
+# Oracle-specific syntax notes
+oracle_syntax:
+  limit_rows:
+    description: "Oracle uses FETCH FIRST N ROWS ONLY instead of LIMIT"
+    correct: "ORDER BY col DESC FETCH FIRST 10 ROWS ONLY"
+    incorrect: "ORDER BY col DESC LIMIT 10"
+  date_functions:
+    description: "Oracle date functions"
+    current_date: "SYSDATE"
+    year_start: "TRUNC(SYSDATE, 'YEAR')"
+    extract_year: "EXTRACT(YEAR FROM date_col)"
+    to_char_year: "TO_CHAR(date_col, 'YYYY')"
+    add_months: "ADD_MONTHS(date, n)"
+  null_handling:
+    description: "Oracle NULL handling"
+    nvl: "NVL(column, default_value)"
+    coalesce: "COALESCE(col1, col2, default)"
+    nullif: "NULLIF(value1, value2)"
+  string_functions:
+    description: "Oracle string functions"
+    upper: "UPPER(column)"
+    lower: "LOWER(column)"
+    concat: "column1 || column2"
+    like: "UPPER(column) LIKE UPPER('%pattern%')"
+  aggregation_notes:
+    description: "Aggregation best practices"
+    notes:
+      - "Always use GROUP BY for non-aggregated columns in SELECT"
+      - "Use HAVING for filtering aggregated values"
+      - "NVL for handling NULL in aggregations"
+
+# Derived Classifications - Business-specific classification mappings
+derived_classifications:
+  supplier_type:
+    name: "Supplier Classification"
+    description: "Classifies suppliers as Motherson Group (G) or External"
+    mappings:
+      motherson_group:
+        label: "Motherson Group"
+        sql_pattern: "ABCINDICATOR = 'G'"
+      external:
+        label: "External"
+        sql_pattern: "ABCINDICATOR IN ('O','N','S') OR ABCINDICATOR IS NULL"
+    usage: "Filter or GROUP BY supplier classification"
+  material_source:
+    name: "Material Classification"
+    description: "Classifies materials by nomination source"
+    mappings:
+      oem_nominated:
+        label: "OEM Nominated"
+        sql_pattern: "OEM IN ('J','Y')"
+      mpp_nominated:
+        label: "MPP Nominated"
+        sql_pattern: "OEM IN ('N','G') OR OEM IS NULL"
+    usage: "Analyze material sourcing strategy"
+  incoterm_responsibility:
+    name: "Incoterm Responsibility"
+    description: "Cost responsibility based on Incoterm"
+    mappings:
+      buyer_responsible:
+        label: "Buyer Responsible"
+        incoterms: ["EXW", "FCA", "FOB"]
+        sql_pattern: "\"Incoterms (Supplier Master)\" IN ('EXW','FCA','FOB')"
+      supplier_responsible:
+        label: "Supplier Responsible"
+        incoterms: ["DAP", "DDP", "DDU"]
+        sql_pattern: "\"Incoterms (Supplier Master)\" IN ('DAP','DDP','DDU')"
+      shared_responsibility:
+        label: "Shared Responsibility"
+        incoterms: ["CPT", "CIP"]
+        sql_pattern: "\"Incoterms (Supplier Master)\" IN ('CPT','CIP')"
+    usage: "Analyze cost responsibility distribution"
+
+# Default Assumptions - Context for ambiguous queries
+defaults:
+  currency: "EUR"
+  spend_metric: "SUM(ROUND(AMOUNT / EXCH_RATE, 2))"
+  spend_column: "AMOUNT"
+  exchange_rate_column: "EXCH_RATE"
+  date_column: "INVOICE_DATE"
+  default_aggregation: "SUM"
+  fiscal_year_start: "04-01"
+  fiscal_year_end: "03-31"
+  mandatory_filter: "INVOICE_DATE > DATE '2024-04-01'"
+  text_matching: "UPPER(col) LIKE UPPER('%value%')"
