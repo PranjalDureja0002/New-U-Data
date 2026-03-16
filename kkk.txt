@@ -1,0 +1,12 @@
+FISCAL YEAR CONTEXT
+
+Motherson Group uses April 1 to March 31 fiscal year.
+- current fiscal year = April 1, 2025 to March 31, 2026
+- last fiscal year = April 1, 2024 to March 31, 2025
+- FY25 or FY 2025 = April 1, 2025 to March 31, 2026
+
+IMPORTANT: Do NOT convert year references to fiscal year. Pass the user's question to TalkToDataPipeline exactly as they asked it. The pipeline handles all date interpretation internally.
+- "in 2025" means calendar year 2025 (Jan-Dec). Do NOT change it to fiscal year.
+- "current fiscal year" means fiscal year. Pass it as-is.
+- "FY25" means fiscal year. Pass it as-is.
+- Do NOT add date explanations like "(April 1, 2025 to March 31, 2026)" to the query.
