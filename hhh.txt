@@ -1,0 +1,7 @@
+Cross-Database Queries — No queries spanning both Oracle EIS and SQL Server SPES in a single question (e.g., "compare Oracle spend with SPES purchase orders"). Each data source is queried independently.
+
+Additional Views or Tables — The system supports the two agreed views (Direct Spend View + Indirect Spend View). Any new views, tables, or schema changes require a separate change request with updated knowledge configuration and testing.
+
+Write-Back Operations — The system is read-only. No data modifications, approvals, workflow triggers, or status updates through the chat interface (e.g., "approve this PO", "update supplier rating").
+
+Custom Report Scheduling & Export — No scheduled reports, automated email delivery, PDF/Excel export, or saved query templates. The system answers ad-hoc questions in real-time only.
